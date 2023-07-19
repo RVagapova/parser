@@ -7,7 +7,10 @@ import com.opencsv.CSVReader;
 import com.opencsv.bean.ColumnPositionMappingStrategy;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
-import org.w3c.dom.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -25,12 +28,9 @@ public class Main {
     public static void main(String[] args) throws ParserConfigurationException, IOException, SAXException {
         String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
         String fileName = "data.csv";
+        String fileNameXML = "data.xml";
         listToJson(parseCSV(columnMapping, fileName));
-        parseXML();
-    }
-
-    public Main() {
-        super();
+        listToJson(parseXML(fileNameXML));
     }
 
     public static List parseCSV(String[] columnMapping, String fileName) {
@@ -64,44 +64,30 @@ public class Main {
         }
     }
 
-    public static void parseXML() throws ParserConfigurationException, IOException, SAXException {
+    public static List<Employee> parseXML(String fileName) throws ParserConfigurationException, IOException, SAXException {
         List<Employee> staff = new ArrayList<>();
+
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new File("data.xml"));
-        Node root = doc.getDocumentElement();
-        System.out.println("Корневой элемент: " + root.getNodeName());
-        read(root);
-    }
+        Document doc = builder.parse(new File(fileName));
 
-    public static void read(Node node) {
-        List<Employee> staff = new ArrayList<>();
-        NodeList nodeList = node.getChildNodes();
+        Node root = doc.getDocumentElement();
+        NodeList nodeList = root.getChildNodes();
 
         for (int i = 0; i < nodeList.getLength(); i++) {
-            Node node_ = nodeList.item(i);
-
+            Node node = nodeList.item(i);
             if (Node.ELEMENT_NODE == node.getNodeType()) {
+                Element employee = (Element) node;
+                long id = Long.parseLong(employee.getElementsByTagName("id").item(0).getTextContent());
+                String firstName = employee.getElementsByTagName("firstName").item(0).getTextContent();
+                String lastName = employee.getElementsByTagName("lastName").item(0).getTextContent();
+                String country = employee.getElementsByTagName("country").item(0).getTextContent();
+                int age = Integer.parseInt(employee.getElementsByTagName("age").item(0).getTextContent());
 
-                System.out.println("Текущий узел: " + node_.getNodeName());
-                Element element = (Element) node_;
-                NamedNodeMap map = element.getAttributes();
-
-                String[] attributes = new String[5];
-
-                for (int a = 0; a < map.getLength(); a++) {
-//                    String attrName = map.item(a).getNodeName();
-                    String attrValue = map.item(a).getNodeValue();
-                    attributes[a] = attrValue;
-//                    System. out.println( "Атрибут: " + attrName + "; значение: " + attrValue);
-                }
-
-                Employee employee = new Employee(Long.parseLong(attributes[0]), attributes[1], attributes[2], attributes[3], Integer.parseInt(attributes[4]));
-                staff.add(employee);
-//                staff.forEach(System.out::println);
-
-                read(node_);
+                Employee employeeDone = new Employee(id, firstName, lastName, country, age);
+                staff.add(employeeDone);
             }
         }
+        return staff;
     }
 }
